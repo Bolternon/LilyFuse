@@ -1,0 +1,56 @@
+* {
+    margin: 0;
+    image-rendering: crisp-edges;
+    font-family: sans-serif;
+    user-select: none;
+}
+body {
+    background-color: black;
+}
+.container {
+    display: flex;
+    background-color: black;
+}
+#canvas {
+    height: 100vh;
+    width: auto;
+    margin: auto;
+}
+.f {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    width: 100vw;
+    height: 33vw;
+}
+.flex {
+    display: flex;
+}
+.f1 {
+    flex: 1;
+}
+.col {
+    flex-direction: column;
+}
+.button {
+    cursor: pointer;
+    display: grid;
+    background-color: #cccc;
+    border-radius: 10px;
+    font-size: 10vw;
+}
+p {
+    cursor: pointer;
+    font-weight: 900;
+    align-self: center;
+    justify-self: center;
+}
+@media screen and (orientation: portrait) {
+    #canvas {
+        height: auto;
+        width: 100vw;
+    }
+    .f {
+        display: flex;
+    }
+}

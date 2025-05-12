@@ -1,190 +1,336 @@
-function startGame() {
-    tileData = gamemodes[coords[1]][0];
-    clonerCount = gamemodes[coords[1]][1];
-    workingCloners = gamemodes[coords[1]][1];
-    clonerQueue = gamemodes[coords[1]][2];
-    essence = gamemodes[coords[1]][3];
-    coords = [3,9];
-    gameStart = true;
+function game00(){
+    if(!playerLoaded){
+        initializePlayerData(1);
+        initializeStartingField();
+        initializeNextRow();
+    };
+    ctx.clearRect(0,0,320,224)
+    advanceTick();
+    processInput();
+    matchTiles();
+    matchTiles();
+    doDyingAnimation();
+    doGravity();
+    displayField();
+    displayTiles();
+    displayNextRow();
+    doMovementAnimation();
+    displayCursor();
 };
-function identifyTile(x,y) {
-    const tile = tileList.find(i => i.id == tileData[y][x][0]);
-    return tile.name;
+function initializePlayerData(p){
+    playerLoaded=true;
+    playerField=[];
+    frieldScrollTimer=30;
+    scrollOffset=0;
+    nextRow=[];
+    score=[];
+    essence=[];
+    time=0;
+    tick=0;
+    combo=[];
+    gauge=[];
+    mult=[];
+    ice=[];
+    if(p==0){
+        fieldPos=112;
+    }else{
+        fieldPos=24;
+    };
+    for (let c=0;c<p+1;c++) {
+        playerField[c]=[];
+        for(let y=0;y<20;y++){
+            playerField[c][y]=[];
+            for(let x=0;x<8;x++){
+                if(y==0||y==19||x==0||x==7){
+                    playerField[c][y][x]=[13,0,0,0];
+                }else{
+                    playerField[c][y][x]=[0,0,0,0];
+                };
+            };
+        };
+        cursor[c]=[];
+        for(let i=0;i<2;i++){
+            cursor[c][i]=[0,0];
+        };
+        frieldScrollTimer[c]=fieldScrollSpeed;
+        scrollOffset=0;
+        nextRow[c]=[];
+        score[c]=0;
+        essence[c]=0;
+        combo[c]=0;
+        gauge[c]=0;
+        mult[c]=0;
+        ice[c]=0;
+    };
+    tilesAvailable=3;
 };
-function advanceTick() {
+function initializeStartingField(){
+    for(let c=0;c<playerField.length;c++){
+        for(let y=0;y<12;y++){
+            for(let x=0;x<6;x++){
+                let tile = 0;
+                while(true){
+                    tile=Math.floor(Math.random()*(tilesAvailable+1));
+                    if(tile==0){
+                        if(Math.floor(Math.random()*(8))==0){
+                            tile=6;
+                        }else{
+                            tile=Math.floor(Math.random()*(tilesAvailable))+1;
+                        };
+                    };
+                    if(playerField[c][y+6][x+1][0]!=tile&&playerField[c][y+7][x][0]!=tile){break;};
+                };
+                playerField[c][y+7][x+1][0]=tile;
+                playerField[c][y+7][x+1][1]=tile;
+            };
+        };
+    };
+};
+function initializeNextRow(){
+    nextRow=[];
+    for(let c=0;c<playerField.length;c++){
+        nextRow[c]=[];
+        for(let x=0;x<8;x++){
+            if(x>0&&x<7){
+                let tile = 0;
+                while(true){
+                    tile=Math.floor(Math.random()*(tilesAvailable+1));
+                    if(tile==0){
+                        if(Math.floor(Math.random()*(8))==0){
+                            tile=6;
+                        }else{
+                            tile=Math.floor(Math.random()*(tilesAvailable))+1;
+                        };
+                    };
+                    if(nextRow[c][x-1]!=tile&&playerField[c][18][x][0]!=tile){break;};
+                };
+                nextRow[c][x]=tile;
+            }else{
+                nextRow[c][x]=13;
+            };
+        };
+    };
+};
+function pushNewRow(){
+    for(let c=0;c<playerField.length;c++){
+        for(let y=1;y<18;y++){
+            playerField[c][y]=playerField[c][y+1];
+        };
+        playerField[c][18]=[[13,13,0,0],[nextRow[c][1],nextRow[c][1],0,0],[nextRow[c][2],nextRow[c][2],0,0],[nextRow[c][3],nextRow[c][3],0,0],[nextRow[c][4],nextRow[c][4],0,0],[nextRow[c][5],nextRow[c][5],0,0],[nextRow[c][6],nextRow[c][6],0,0],[13,13,0,0]]
+    };
+};
+function advanceTick(){
     tick++;
-    if (tick == fps) {
-        time++;
-        tick = 0;
-    };
-};
-function clonerCycle() {
-    for (let i = 0; i < clonerCount; i++) {
-        if (clonerQueue[i][4] > 0) {
-            if (clonerQueue[i][3] <= 0) {
-                findClonableTile(i);
-            } else {
-                clonerQueue[i][3]--;
+    if(tick>=30){time++;};
+    fieldScrollTimer--;
+    if(fieldScrollTimer<=0){
+        fieldScrollTimer=fieldScrollSpeed;
+        scrollOffset++;
+        if(scrollOffset>=16){
+            scrollOffset=0;
+            pushNewRow();
+            initializeNextRow();
+            for(let c=0;c<playerField.length;c++){
+                if(coords[c][1]>9){coords[c][1]--;};
             };
         };
     };
-    function findClonableTile(i) {
-        const x = clonerQueue[i][0];
-        const y = clonerQueue[i][1];
-        if (typeof tileData[y][x-1] != "undefined") {
-            if (tileData[y][x-1][0] === 0) {
-                spawnRandomTile(x-1,y,i);
-                return;
-            };
-        }
-        if (typeof tileData[y-1] != "undefined") {
-            if (tileData[y-1][x][0] === 0) {
-                spawnRandomTile(x,y-1,i);
-                return;
-            };
-        }
-        if (typeof tileData[y][x+1] != "undefined") {
-            if (tileData[y][x+1][0] === 0) {
-                spawnRandomTile(x+1,y,i);
-                return;
-            };
-        }
-        if (typeof tileData[y+1] != "undefined") {
-            if (tileData[y+1][x][0] === 0) {
-                spawnRandomTile(x,y+1,i);
-                return;
-            };
-        };
-        clonerQueue[i][4]--;
-    };
-    function spawnRandomTile(y,x,i) {
-        const newTile = Math.floor(Math.random() * 6) + 4;
-        const isLily = newTile == 9 ? 1 : 0;
-        tileData[x][y][0] = newTile;
-        tileData[x][y][1] = isLily;
-        clonerQueue[i][3] = clonerQueue[i][2];
+};
+function displayField(){
+    for(let c=0;c<playerField.length;c++){
+        drawSprite((player[c]*96),224,fieldPos+(176*c),16,96,192);
     };
 };
-function gravityCheck() {
-    for (let y = 14; y >= 0; y--) {
-        for (let x = 0; x < 8; x++) {
-            if (tileList[tileData[y][x][0]].gravity && tileData[y+1][x][0] === 0 && !tileData[y][x][2] && !tileData[y][x][4]) {
-                tileData[y][x][2] = true;
-                tileData[y][x][3] = 6;
-            };
-            if (tileData[y][x][2]) {
-                if (tileData[y][x][3] > 0) {
-                    tileData[y][x][3]--;
-                } else {
-                    if (tileData[y+1][x][0] === 0) {
-                        tileData[y][x][3] = 1;
-                        tileData[y+1][x] = tileData[y][x];
-                        tileData[y][x] = [0,0,false,0,false,0];
-                    } else {
-                        tileData[y][x][2] = false;
-                        tileData[y][x][3] = 0;
+function displayTiles(){
+    for(let c=0;c<playerField.length;c++){
+        for(let y=7;y<19;y++){
+            for(let x=1;x<7;x++){
+                if(!isMoving(c,x,y)){
+                    drawSprite(playerField[c][y][x][0]*16,0,(x*16)-16+fieldPos+(176*c),(y*16)-112-scrollOffset+16,16,16);
+                    if(isDying(c,x,y)&&playerField[c][y][x][2]%2>0){
+                        drawSprite(playerField[c][y][x][0]*16,16,(x*16)-16+fieldPos+(176*c),(y*16)-112-scrollOffset+16,16,16);
                     };
                 };
             };
         };
     };
 };
-function deleteCheck() {
-    for (let y = 15; y >= 3; y--) {
-        for (let x = 0; x < 8; x++) {
-            if (checkID(tileData[y][x][0]) != 0 && !tileData[y][x][4]) {
-                let id = tileData[y][x][0];
-                if (tileData[y][x][0] == id && tileData[y-1][x][0] == id && tileData[y-2][x][0] == id && tileData[y-3][x][0] == id) {
-                    tileData[y][x][4] = true;
-                    tileData[y][x][5] = 30;
-                    tileData[y-1][x][4] = true;
-                    tileData[y-1][x][5] = 30;
-                    tileData[y-2][x][4] = true;
-                    tileData[y-2][x][5] = 30;
-                    tileData[y-3][x][4] = true;
-                    tileData[y-3][x][5] = 30;
-                };
-            };
-        };
-    };
-    for (let y = 0; y < 13; y++) {
-        for (let x = 0; x < 8; x++) {
-            if (checkID(tileData[y][x][0]) != 0 && !tileData[y][x][4]) {
-                let id = tileData[y][x][0];
-                if (tileData[y][x][0] == id && tileData[y+1][x][0] == id && tileData[y+2][x][0] == id && tileData[y+3][x][0] == id) {
-                    tileData[y][x][4] = true;
-                    tileData[y][x][5] = 30;
-                    tileData[y+1][x][4] = true;
-                    tileData[y+1][x][5] = 30;
-                    tileData[y+2][x][4] = true;
-                    tileData[y+2][x][5] = 30;
-                    tileData[y+3][x][4] = true;
-                    tileData[y+3][x][5] = 30;
-                };
-            };
-        };
-    };
-    for (let y = 0; y < 16; y++) {
-        for (let x = 0; x < 5; x++) {
-            if (checkID(tileData[y][x][0]) != 0 && !tileData[y][x][4]) {
-                let id = tileData[y][x][0];
-                if (tileData[y][x][0] == id && tileData[y][x+1][0] == id && tileData[y][x+2][0] == id && tileData[y][x+3][0] == id) {
-                    tileData[y][x][4] = true;
-                    tileData[y][x][5] = 30;
-                    tileData[y][x+1][4] = true;
-                    tileData[y][x+1][5] = 30;
-                    tileData[y][x+2][4] = true;
-                    tileData[y][x+2][5] = 30;
-                    tileData[y][x+3][4] = true;
-                    tileData[y][x+3][5] = 30;
-                };
-            };
-        };
-    };
- for (let y = 0; y < 16; y++) {
-        for (let x = 7; x >= 3; x--) {
-            if (checkID(tileData[y][x][0]) != 0 && !tileData[y][x][4]) {
-                let id = tileData[y][x][0];
-                if (tileData[y][x][0] == id && tileData[y][x-1][0] == id && tileData[y][x-2][0] == id && tileData[y][x-3][0] == id) {
-                    tileData[y][x][4] = true;
-                    tileData[y][x][5] = 30;
-                    tileData[y][x-1][4] = true;
-                    tileData[y][x-1][5] = 30;
-                    tileData[y][x-2][4] = true;
-                    tileData[y][x-2][5] = 30;
-                    tileData[y][x-3][4] = true;
-                    tileData[y][x-3][5] = 30;
-                };
-            };
-        };
-    };
-    for (let y = 0; y < 16; y++) {
-        for (let x = 0; x < 8; x++) {
-            if (tileData[y][x][4]) {
-                if (tileData[y][x][5] > 0) {
-                    tileData[y][x][5]--;
-                    if (tileData[y][x][5] % 2 == 0) {
-                        drawSprite("flash",32+(x*10),16+(y*10));
-                    };
-                } else {
-                    tileData[y][x] = [0,0,false,0,false,0];
-                };
-            }
-        };
-    };
-    function checkID(id) {
-        if (id == 0 || id == 1 || id == 2 || id == 3) {
-            return 0;
-        } else {
-            return id;
+function displayNextRow(){
+    for(let c=0;c<playerField.length;c++){
+        for(let x=1;x<7;x++){
+            drawSprite(nextRow[c][x]*16,32,(x*16)-16+fieldPos+(176*c),208-scrollOffset,16,16);
         };
     };
 };
-function moveTiles(x,y,dx,dy) {
-    const tileA = tileData[y][x];
-    const tileB = tileData[y+dy][x+dx];
-    if (!tileData[y+dy][x+dx][2] && !tileData[y+dy][x+dx][4] && tileList[tileData[y][x][0]].move && tileList[tileData[y+dy][x+dx][0]].move) {
-        tileData[y][x] = tileB;
-        tileData[y+dy][x+dx] = tileA;
+function displayCursor(){
+    for(let c=0;c<playerField.length;c++){
+        for(let y=0;y<2;y++){
+            for(let x=0;x<2;x++){
+                if(x==1&&coords[c][0]==6){
+                }else{
+                    drawSprite(288+pulsate()+(x*16),16+(y*16),(x*16)+(coords[c][0]*16)-16+fieldPos+(176*c),(y*16)+(coords[c][1]*16)-144-scrollOffset+16,16,16);
+                };
+            };
+        };
     };
+    tick();
+    function pulsate(){
+        if(cursorPulsate>7){return 32;}else{return 0;};
+    };
+    function tick(){
+        cursorPulsate++;
+        if(cursorPulsate>15){cursorPulsate=0;};
+    };
+};
+function moveCursor(c,x,y){
+    if(coords[c][0]+x<=0||coords[c][0]+x>6||coords[c][1]+y<9||coords[c][1]+y>19||coords[c][2]>0||coords[c][3]>0){
+    }else{
+        coords[c][0]+=x;
+        coords[c][1]+=y;
+    };
+};
+function moveTile(c,dx,dy){
+    if(!isMoving(c,coords[c][0],coords[c][1]-1)&&!isMoving(c,coords[c][0]+dx,coords[c][1]-1-dy)&&isNotBarrier(c,coords[c][0],coords[c][1]-1)&&isNotBarrier(c,coords[c][0]+dx,coords[c][1]-1-dy)&&!isDying(c,coords[c][0],coords[c][1]-1)&&!isDying(c,coords[c][0]+dx,coords[c][1]-1-dy)){
+        let p=[coords[c][1]-1,coords[c][0]];
+        let a=[coords[c][1]-1-dy,coords[c][0]+dx];
+        playerField[c][p[0]][p[1]][3]=2;
+        playerField[c][a[0]][a[1]][3]=2;
+        let tileA=playerField[c][p[0]][p[1]];
+        let tileB=playerField[c][a[0]][a[1]];
+        playerField[c][p[0]][p[1]]=tileB;
+        playerField[c][a[0]][a[1]]=tileA;
+        coords[c][2]=dx;
+        coords[c][3]=dy;
+    };
+};
+function doMovementAnimation(){
+    for(let c=0;c<playerField.length;c++){
+        if(coords[c][2]+coords[c][3]>=1){
+            let p=[coords[c][1]-1,coords[c][0]];
+            let a=[coords[c][1]-1-coords[c][3],coords[c][0]+coords[c][2]];
+            if(playerField[c][p[0]][p[1]][3]>=2){
+                if(coords[c][2]>=1){
+                    drawSprite(playerField[c][p[0]][p[1]][0]*16,0,(p[1]*16)+((playerField[c][p[0]][p[1]][3]*6))-16+fieldPos+(176*c),(p[0]*16)-112-scrollOffset+16,16,16);
+                    drawSprite(playerField[c][a[0]][a[1]][0]*16,0,(a[1]*16)-((playerField[c][a[0]][a[1]][3]*6))-16+fieldPos+(176*c),(p[0]*16)-112-scrollOffset+16,16,16);
+                }else{
+                    drawSprite(playerField[c][p[0]][p[1]][0]*16,0,(p[1]*16)-16+fieldPos+(176*c),(p[0]*16)-((playerField[c][p[0]][p[1]][3]*6))-112-scrollOffset+16,16,16);
+                    drawSprite(playerField[c][a[0]][a[1]][0]*16,0,(a[1]*16)-16+fieldPos+(176*c),(p[0]*16)+((playerField[c][a[0]][a[1]][3]*6)-16)-112-scrollOffset+16,16,16);
+                };
+                playerField[c][p[0]][p[1]][3]--;
+                playerField[c][a[0]][a[1]][3]--;
+            }else{
+                coords[c][2]=0;
+                coords[c][3]=0;
+                playerField[c][p[0]][p[1]][3]=0;
+                playerField[c][a[0]][a[1]][3]=0;
+            };
+        };
+    };
+};
+function matchTiles(){
+    for(let c=0;c<playerField.length;c++){
+        for(let y=18;y>=7;y--){
+            for(let x=1;x<=6;x++){
+                let id=playerField[c][y][x][0];
+                if(id>=1&&id<=5){
+                    horizontalScan(c,x,y,id);
+                };
+            };
+        };
+    };
+    for(let c=0;c<playerField.length;c++){
+        for(let x=1;x<=6;x++){
+            for(let y=7;y<=18;y++){
+                let id=playerField[c][y][x][0];
+                if(id>=1&&id<=5){
+                    verticalScan(c,x,y,id);
+                };
+            };
+        };
+    };
+    function horizontalScan(c,x,y,id){
+        let i=0;
+        while(true){
+            if((playerField[c][y][x+i+1][0]==id||playerField[c][y][x+i+1][0]==6||playerField[c][y][x+i+1][0]==(id+6))&&(!isDying(c,x+i+1,y)||playerField[c][y][x+i+1][2]==60)&&!isMoving(c,x,y)){
+                i++;
+            }else{
+                break;
+            };
+        };
+        if(i>2){
+            for(let m=0;m<i+1;m++){
+                if(playerField[c][y][x+m][0]==6){
+                    playerField[c][y][x+m][0]=playerField[c][y][x+m-1][1]+6;
+                };
+                playerField[c][y][x+m][2]=45;
+            };
+        };
+    };
+    function verticalScan(c,x,y,id){
+        let i=0;
+                while(true){
+            if((playerField[c][y+i+1][x][0]==id||playerField[c][y+i+1][x][0]==6||playerField[c][y+i+1][x][0]==(id+6))&&(!isDying(c,x,y+i+1)||playerField[c][y+i+1][x][2]==60)&&!isMoving(c,x,y)){
+                i++;
+            }else{
+                break;
+            };
+        };
+        if(i>2){
+            for(let m=0;m<i+1;m++){
+                if(playerField[c][y+m][x][0]==6){
+                    playerField[c][y+m][x][0]=playerField[c][y+m-1][x][1]+6;
+                };
+                playerField[c][y+m][x][2]=45;
+            };
+        };
+    };
+};
+function doDyingAnimation(){
+    for(let c=0;c<playerField.length;c++){
+        for(let y=1;y<19;y++){
+            for(let x=1;x<7;x++){
+                if(isDying(c,x,y)){
+                    if(playerField[c][y][x][2]==1){
+                        if(playerField[c][y][x][0]==playerField[c][y][x][1]){
+                            playerField[c][y][x]=[0,0,0,0];
+                        }else{
+                            playerField[c][y][x][1]=playerField[c][y][x][0]
+                            playerField[c][y][x][2]=0;
+                        };
+                    }else{
+                        playerField[c][y][x][2]--;
+                    };
+                };
+            };
+        };
+    };
+};
+function doGravity(){
+    for(let c=0;c<playerField.length;c++){
+        for(let i=0;i<20;i++){
+            for(let y=18;y>0;y--){
+                for(let x=1;x<7;x++){
+                    if(!isAir(c,x,y)&&!isDying(c,x,y)&&!isMoving(c,x,y)&&isAir(c,x,y+1)&&!isDying(c,x,y+1)&&!isMoving(c,x,y+1)){
+                        playerField[c][y+1][x]=playerField[c][y][x];
+                        playerField[c][y][x]=[0,0,0,0];
+                    };
+                };
+            };
+        };
+    };
+};
+function isValidTile(c,x,y){
+    if(playerField[c][y][x][0]==0||playerField[c][y][x][0]==13){return false;}else{return true};
+};
+function isAir(c,x,y){
+    if(playerField[c][y][x][0]==0){return true;}else{return false};
+};
+function isNotBarrier(c,x,y){
+    if(playerField[c][y][x][0]==13){return false;}else{return true};
+};
+function isDying(c,x,y){
+    if(playerField[c][y][x][2]>0){return true;}else{return false;};
+};
+function isMoving(c,x,y){
+    if(playerField[c][y][x][3]==0){return false;}else{return true;};
 };

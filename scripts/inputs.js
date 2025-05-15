@@ -21,14 +21,14 @@ function processInput(){
                             for(let p=0;p<players;p++){
                                 for(let q=0;q<inputQueue.length;q++){
                                     switch(inputQueue[q]){
-                                        case controller[p][0]:moveCursor(p,0,-1);break;
-                                        case controller[p][1]:moveCursor(p,0,1);break;
-                                        case controller[p][2]:moveCursor(p,-1,0);break;
-                                        case controller[p][3]:moveCursor(p,1,0);break;
+                                        case controller[p][0]:if(!isPaused&&!gameOver){moveCursor(p,0,-1);}else{  };break;
+                                        case controller[p][1]:if(!isPaused&&!gameOver){moveCursor(p,0,1);}else{  };break;
+                                        case controller[p][2]:if(!isPaused&&!gameOver){moveCursor(p,-1,0);}else{  };break;
+                                        case controller[p][3]:if(!isPaused&&!gameOver){moveCursor(p,1,0);}else{  };break;
                                         case controller[p][4]:break;
-                                        case controller[p][5]:moveTile(p,0,1);break;
-                                        case controller[p][6]:moveTile(p,1,0);break;
-                                        case controller[p][7]:  break;
+                                        case controller[p][5]:if(gameStart&&!gameOver&&!isPaused){moveTile(p,0,1);}else{  };break;
+                                        case controller[p][6]:if(gameStart&&!gameOver&&!isPaused){moveTile(p,1,0);}else{  };break;
+                                        case controller[p][7]:if(gameStart&&!gameOver){isPaused=!isPaused};break;
                                     };
                                 };
                             };

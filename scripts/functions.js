@@ -1,5 +1,41 @@
 function game00(){
     if(!playerLoaded){
+        initializePlayerData(0);
+        initializeStartingField();
+        initializeNextRow();
+    };
+    processInput();
+    if(gameStart){
+        if(isPaused){
+        }else{
+            advanceTick();
+            matchTiles();
+            matchTiles();
+            doDyingAnimation();
+            doGravity();
+        };
+    };
+    displayGameBG();
+    displayField();
+    displayTiles();
+    displayNextRow();
+    doMovementAnimation();
+    displayCursor();
+    displayFrame();
+    displayTimer();
+    if(isFadeIn()){
+        if(!gameStart){
+            beginCountdown();
+        };
+        if(gameOver){
+            gameEnd();
+        };
+    }else{
+        commitFade(-1);
+    };
+};
+function game01(){
+    if(!playerLoaded){
         initializePlayerData(1);
         initializeStartingField();
         initializeNextRow();
@@ -23,11 +59,15 @@ function game00(){
     displayCursor();
     displayFrame();
     displayTimer();
-    if(!gameStart){
-        beginCountdown();
-    };
-    if(gameOver){
-        /*gameEnd();*/
+    if(isFadeIn()){
+        if(!gameStart){
+            beginCountdown();
+        };
+        if(gameOver){
+            gameEnd();
+        };
+    }else{
+        commitFade(-1);
     };
 };
 function initializePlayerData(p){
@@ -75,15 +115,14 @@ function initializePlayerData(p){
         scrollOffset=0;
         nextRow[c]=[];
         score[c]=0;
-        essence[c]=/*100*/9999999999;
+        essence[c]=100;
         combo[c]=1;
         gauge[c]=0;
         mult[c]=0;
         ice[c]=0;
-        winner[c]=true;
+        winner[c]=1;
     };
     tilesAvailable=3;
-    /*essence=[2,1]*/
 };
 function beginCountdown(){
     if(countdown<30){
@@ -160,7 +199,9 @@ function advanceTick(){
     tick++;
     if(tick>=30){
         tick=0;
-        time++;
+        if(!gameOver){
+            time++;
+        };
         if(time>19){
             switch(time){
                 case 20:fieldScrollSpeed=10;break;
@@ -183,7 +224,7 @@ function advanceTick(){
                 if(essence[c]<=0){
                     essence[c]=0;
                     gameOver=true;
-                    winner[c]=false;
+                    winner[c]=0;
                 };
             };
         };
@@ -208,7 +249,7 @@ function advanceTick(){
 };
 function gameEnd(){
     for(let c=0;c<playerField.length;c++){
-        drawSprite((player[c]*96),224,fieldPos+(176*c),16,96,192);
+        drawSprite((winner[c]*96),48,fieldPos+(176*c),16,96,48);
     };
 };
 function displayField(){
@@ -285,15 +326,15 @@ function displayFrame(){
 function displayGameBG(){
     for(let y=0;y<15;y++){
         for(let x=0;x<20;x++){
-            drawSprite(512,32,(x*16),(y*16)-scrollOffset,16,16);
+            drawSprite(576,32,(x*16),(y*16)-scrollOffset,16,16);
         };
     };
 };
 function displayTimer(){
     let n="0000".slice(time.toString().length)+time.toString();
-    drawSprite(464,16,136,88,48,32);
+    drawSprite(464,16,fieldPos+112,88,48,32);
     for(let x=0;x<4;x++){
-        drawSprite(512+((n.charCodeAt(x)-48)*8),16,144+(x*8),96,8,16);
+        drawSprite(512+((n.charCodeAt(x)-48)*8),16,fieldPos+120+(x*8),96,8,16);
     };
 };
 function moveCursor(c,x,y){
@@ -477,4 +518,39 @@ function isDying(c,x,y){
 };
 function isMoving(c,x,y){
     if(playerField[c][y][x][3]==0){return false;}else{return true;};
+};
+function isFadeOut(){
+    if(fade==255){return true;}else{return false;};
+};
+function isFadeIn(){
+    if(fade==0){return true;}else{return false;};
+};
+function commitFade(x){
+    fade+=(x*16);
+    if(fade>255){fade=255;};
+    if(fade<0){fade=0;};
+    ctx.fillStyle="#000000"+fade.toString(16);
+    ctx.fillRect(0,0,320,224);
+};
+function displayMainMenu(){
+    for(let y=0;y<15;y++){
+        for(let x=0;x<20;x++){
+            drawSprite(512,32,(x*16),(y*16),16,16);
+        };
+    };
+    drawSprite(592,112,64,16,192,48);
+    if(!titleScreen){
+        drawSprite((592+(menuB*192)),160,64,64,192,64);
+    };
+    if(!mainMenu){
+        drawSprite(480,112,16,64,112,112);
+        drawSprite((player[0]*96),128,24,72,96,96);
+        drawSprite(976,(24+(player[0]*40)),16,176,112,40);
+        if(menuB==1){
+            drawSprite(480,112,192,64,112,112);
+            drawSprite((player[1]*96),128,200,72,96,96);
+            drawSprite(976,(24+(player[1]*40)),192,176,112,40);
+        };
+    };
+    processInput();
 };

@@ -15,17 +15,20 @@ graphics.onload=()=>{
 function frameStart(){
     if(graphicsLoaded){
         if(titleScreen){
-
+            displayMainMenu();
         }else{
             if(mainMenu){
-
+                displayMainMenu();
             }else{
                 if(!pastMenu){
-
+                    displayMainMenu();
                 }else{
                     if(menuA==0){
                         if(menuB==0){
                             game00();
+                        };
+                        if(menuB==1){
+                            game01();
                         };
                     };
                 };

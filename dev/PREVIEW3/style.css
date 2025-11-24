@@ -1,0 +1,14 @@
+* {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+#GAME {
+    width: 640px;
+    height: 480px;
+
+    box-shadow: 1px 1px 0 black;
+}
+#RAM {
+    display: none;
+}
